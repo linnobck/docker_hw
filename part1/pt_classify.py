@@ -1,9 +1,9 @@
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision.io import read_image
-import sys
 import argparse
 
 class Net(nn.Module):
