@@ -31,16 +31,24 @@ This will
 - Train the MNIST model
 - Save it in the Docker image
 * 2. Check that the image was built successfully by ```bash docker images```
-* 3. Next, run ```bash docker run -d --rm --name pt_mnist \ -v "$(pwd)/images:/app/images:ro" \linnobck/docker_hw:part1```
+* 3. To test everything automatically, run ```bash pytest -q test_infer.py```
+This will:
+- Build and start the Docker container (linnobck/docker_hw:part1) in the background
+- Mount the local images folder so the container can access the test images
+- Randomly select a few sample images from that folder
+- Run classification for each image inside the container using pt_classify.py
+- Compare the predicted digit with the number in the image filename
+- Automatically confirm that all predictions are correct
+- Stop and remove the container after testing
+
+To run manually: 
+* 3. Run ```bash docker run -d --rm --name pt_mnist \ -v "$(pwd)/images:/app/images:ro" \linnobck/docker_hw:part1```
   This builds the container and puts the image inside
   The provided `build.sh` script will automatically build the Docker image (`linnobck/docker_hw:part1`) from the included Dockerfile.
 * 4. Run ```bash docker ps and see pt_mnist listed```
 * 5. Optional: In the terminal run ```bash docker exec pt_mnist python pt_classify.py --input /app/images/....png``` to manually test
 Replace ... with any image from your images folder.
 * 6. Run ```bash docker stop pt_mnist``` to stop the container
-
-* To test everything automatically, run ```bash pytest -q test_infer.py```
-
 
 ## Authors
 
