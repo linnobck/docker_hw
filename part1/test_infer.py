@@ -1,6 +1,5 @@
-import re
+import os
 import random
-import subprocess
 import time
 from pathlib import Path
 
@@ -11,40 +10,43 @@ CONTAINER_NAME = "pt_mnist"
 HOST_IMG = Path(__file__).parent / "images"
 CONT_IMG = "/app/images"
 
+
 def start():
-    # stop old container
-    subprocess.run(["docker", "rm", "-f", CONTAINER_NAME], check=False)
-    #start new container
-    subprocess.run([
-        "docker", "run", "-d", "--rm",
-        "--name", CONTAINER_NAME,
-        "-v", f"{HOST_IMG.resolve()}:{CONT_IMG}:ro",
-        IMG_TAG
-    ])
-    time.sleep(2)
+    # stop  old container
+    os.system(f"docker rm -f {CONTAINER_NAME} > /dev/null 2>&1")
+    # start new one
+    os.system(
+        f'docker run -d --rm --name {CONTAINER_NAME} '
+        f'-v "{HOST_IMG.resolve()}:{CONT_IMG}:ro" {IMG_TAG}'
+    )
+    time.sleep(3)
 
 def stop():
-    subprocess.run(["docker", "stop", CONTAINER_NAME], check=False)
+    os.system(f"docker stop {CONTAINER_NAME} > /dev/null 2>&1")
+
+def get_prediction(output):
+    for ch in output:
+        if ch.isdigit():
+            return int(ch)
+    return -1
 
 def test_infer():
     # if no image folder
     if not HOST_IMG.exists():
-        raise Exception("Image folder is missing")
+        raise Exception("Image folder missing")
 
     images = list(HOST_IMG.glob("*.png"))
+    
     sample = random.sample(images, min(3, len(images)))
     start()
     try:
         for img in sample:
-            # run classification in container
-            result = subprocess.run(
-                ["docker", "exec", CONTAINER_NAME, "python", "pt_classify.py",
-                 "--input", f"{CONT_IMG}/{img.name}"],
-                capture_output=True, text=True
-            )
+            # run classifier in container
+            cmd = f"docker exec {CONTAINER_NAME} python pt_classify.py --input {CONT_IMG}/{img.name}"
+            stream = os.popen(cmd)
+            output = stream.read()
             gt = int(img.name[0])
-            m = re.search(r"(\d)", result.stdout)
-            pred = int(m.group(1)) if m else -1
+            pred = get_prediction(output)
             print(f"{img.name} -> got {pred} (expected {gt})")
             assert gt == pred
     finally:
